@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Target,
@@ -8,6 +8,8 @@ import {
   Search,
   Bell,
   Plus,
+  Loader2,
+  Save,
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -17,12 +19,55 @@ import { CheckMatchModal, RoadmapSettings } from "@/components/modals/CheckMatch
 import { MatchAnalysisModal } from "@/components/modals/MatchAnalysisModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
+
+const RESUME_STORAGE_KEY = "careerhq_resume_text";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isCheckMatchOpen, setIsCheckMatchOpen] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [jobDescription, setJobDescription] = useState("");
+  const [resumeText, setResumeText] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Load resume from localStorage on mount
+  useEffect(() => {
+    const savedResume = localStorage.getItem(RESUME_STORAGE_KEY);
+    if (savedResume) {
+      setResumeText(savedResume);
+    }
+  }, []);
+
+  const handleSaveResume = () => {
+    localStorage.setItem(RESUME_STORAGE_KEY, resumeText);
+    toast({
+      title: "Resume Saved",
+      description: "Your resume has been saved to local storage.",
+    });
+  };
+
+  const handleAnalyze = async () => {
+    if (!jobDescription.trim()) {
+      toast({
+        title: "Job Description Required",
+        description: "Please paste a job description to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    console.log(`Comparing Resume: ${resumeText} with Job: ${jobDescription}`);
+
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    setIsAnalyzing(false);
+    setIsCheckMatchOpen(true);
+  };
 
   const handleGenerate = (settings: RoadmapSettings) => {
     console.log("Generating roadmap with settings:", settings);
@@ -74,19 +119,44 @@ const Index = () => {
         <div className="p-6 lg:p-8 space-y-8">
           {activeSection === "dashboard" && (
             <>
-              {/* Welcome Section */}
+              {/* Hero Section with Job Analysis */}
               <motion.div
                 key="dashboard"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-2"
+                className="glass-card rounded-2xl p-6 lg:p-8 space-y-4"
               >
-                <h1 className="text-3xl font-bold text-foreground">
-                  Welcome back, Alex
-                </h1>
-                <p className="text-muted-foreground">
-                  Your career journey continues. Here's your progress overview.
-                </p>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold text-foreground">
+                    Welcome back, Alex
+                  </h1>
+                  <p className="text-muted-foreground">
+                    Paste a job description below to analyze your skill match.
+                  </p>
+                </div>
+                <Textarea
+                  placeholder="Paste the full job description here..."
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  className="min-h-[150px] resize-none bg-muted/50 border-border focus:border-primary"
+                />
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                  className="gap-2 gradient-primary text-primary-foreground hover:opacity-90"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-4 h-4" />
+                      Analyze Match
+                    </>
+                  )}
+                </Button>
               </motion.div>
 
               {/* Stats Grid */}
@@ -284,10 +354,41 @@ const Index = () => {
               className="space-y-6"
             >
               <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-              <p className="text-muted-foreground">Manage your account preferences and notifications.</p>
+              <p className="text-muted-foreground">Manage your account preferences and resume profile.</p>
+              
+              {/* Resume Profile Section */}
+              <div className="glass-card rounded-xl p-6 max-w-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground">Resume Profile</h3>
+                  <Button
+                    onClick={handleSaveResume}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Paste your resume text below. This will be saved locally and used for job matching analysis.
+                </p>
+                <Textarea
+                  placeholder="Paste your full resume here (experience, skills, education, etc.)..."
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  className="min-h-[300px] resize-none bg-muted/50 border-border focus:border-primary"
+                />
+                {resumeText && (
+                  <p className="text-xs text-muted-foreground">
+                    {resumeText.length} characters • Last saved in browser storage
+                  </p>
+                )}
+              </div>
+
+              {/* Preferences Section */}
               <div className="glass-card rounded-xl p-6 max-w-2xl space-y-4">
                 <h3 className="font-semibold text-foreground">Preferences</h3>
-                <p className="text-sm text-muted-foreground">Settings content coming soon...</p>
+                <p className="text-sm text-muted-foreground">Additional settings coming soon...</p>
               </div>
             </motion.div>
           )}
