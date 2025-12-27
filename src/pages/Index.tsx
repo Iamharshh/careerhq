@@ -15,6 +15,7 @@ import { ResumeUpload } from "@/components/dashboard/ResumeUpload";
 import { OpportunityHub } from "@/components/opportunities/OpportunityHub";
 import { CheckMatchModal, RoadmapSettings } from "@/components/modals/CheckMatchModal";
 import { MatchAnalysisModal } from "@/components/modals/MatchAnalysisModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -53,6 +54,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
                 <Bell className="w-5 h-5 text-muted-foreground" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
