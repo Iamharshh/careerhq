@@ -128,7 +128,7 @@ const Index = () => {
               >
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold text-foreground">
-                    Welcome back, Alex
+                    Welcome
                   </h1>
                   <p className="text-muted-foreground">
                     Paste a job description below to analyze your skill match.
