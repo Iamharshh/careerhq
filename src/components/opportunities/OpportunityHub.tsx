@@ -7,9 +7,10 @@ import {
   DollarSign,
   MapPin,
   Clock,
-  ArrowUpRight,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type TabType = "jobs" | "hackathons" | "opensource" | "freelance";
 
@@ -19,7 +20,7 @@ interface Opportunity {
   company: string;
   location: string;
   type: string;
-  relevanceScore: number;
+  description: string;
   posted: string;
   tags: string[];
 }
@@ -39,7 +40,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "TechCorp",
       location: "San Francisco, CA",
       type: "Full-time",
-      relevanceScore: 92,
+      description: "Looking for a Senior Frontend Developer with 5+ years of experience in React, TypeScript, and GraphQL. You'll be leading our frontend architecture and mentoring junior developers.",
       posted: "2 days ago",
       tags: ["React", "TypeScript", "GraphQL"],
     },
@@ -49,7 +50,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "StartupXYZ",
       location: "Remote",
       type: "Full-time",
-      relevanceScore: 87,
+      description: "Join our fast-growing startup as a Full Stack Engineer. We need someone proficient in Node.js, React, and AWS to build scalable solutions.",
       posted: "1 week ago",
       tags: ["Node.js", "React", "AWS"],
     },
@@ -59,7 +60,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "DigitalAgency",
       location: "New York, NY",
       type: "Contract",
-      relevanceScore: 78,
+      description: "We're hiring a React Developer for a 6-month contract. Experience with Next.js and Tailwind CSS is required.",
       posted: "3 days ago",
       tags: ["React", "Next.js", "Tailwind"],
     },
@@ -71,7 +72,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "Google",
       location: "Virtual",
       type: "48 hours",
-      relevanceScore: 85,
+      description: "Build innovative AI solutions using Google's latest APIs. Categories include AI/ML and Web Development with $50k in prizes.",
       posted: "Starts Jan 15",
       tags: ["AI/ML", "Web Dev", "$50k Prize"],
     },
@@ -81,7 +82,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "TechForGood",
       location: "Virtual",
       type: "3 days",
-      relevanceScore: 72,
+      description: "Create technology solutions for climate change. Focus areas include sustainability and IoT with $25k in prizes.",
       posted: "Starts Feb 1",
       tags: ["Sustainability", "IoT", "$25k Prize"],
     },
@@ -93,7 +94,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "Meta",
       location: "Remote",
       type: "Open Source",
-      relevanceScore: 95,
+      description: "Contribute to React's core codebase. Good first issues available for JavaScript developers looking to get started.",
       posted: "Active",
       tags: ["React", "JavaScript", "Good First Issue"],
     },
@@ -103,7 +104,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "Microsoft",
       location: "Remote",
       type: "Open Source",
-      relevanceScore: 88,
+      description: "Help maintain and improve TypeScript documentation. Great for developers who want to contribute to documentation.",
       posted: "Active",
       tags: ["TypeScript", "Documentation"],
     },
@@ -115,7 +116,7 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "RetailCo",
       location: "Remote",
       type: "$5k-10k",
-      relevanceScore: 81,
+      description: "Build a complete e-commerce platform with React and Stripe integration. 3-month project timeline.",
       posted: "Posted today",
       tags: ["React", "Stripe", "3 months"],
     },
@@ -125,15 +126,35 @@ const mockOpportunities: Record<TabType, Opportunity[]> = {
       company: "FinTech Startup",
       location: "Remote",
       type: "$3k-5k",
-      relevanceScore: 89,
+      description: "Develop an analytics dashboard with React and D3.js for data visualization. 6-week project.",
       posted: "1 day ago",
       tags: ["React", "D3.js", "6 weeks"],
     },
   ],
 };
 
-export function OpportunityHub() {
+interface OpportunityHubProps {
+  onCheckFit?: (opportunityText: string) => void;
+}
+
+export function OpportunityHub({ onCheckFit }: OpportunityHubProps) {
   const [activeTab, setActiveTab] = useState<TabType>("jobs");
+
+  const handleCheckFit = (opp: Opportunity) => {
+    const opportunityText = `
+Title: ${opp.title}
+Company: ${opp.company}
+Location: ${opp.location}
+Type: ${opp.type}
+
+Description:
+${opp.description}
+
+Required Skills: ${opp.tags.join(", ")}
+    `.trim();
+    
+    onCheckFit?.(opportunityText);
+  };
 
   return (
     <div className="space-y-6">
@@ -173,7 +194,7 @@ export function OpportunityHub() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ x: 4 }}
-              className="glass-card rounded-xl p-5 cursor-pointer group"
+              className="glass-card rounded-xl p-5 group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -181,18 +202,6 @@ export function OpportunityHub() {
                     <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                       {opp.title}
                     </h3>
-                    <div
-                      className={cn(
-                        "px-2 py-0.5 text-xs font-bold rounded-full",
-                        opp.relevanceScore >= 90
-                          ? "bg-success/10 text-success"
-                          : opp.relevanceScore >= 80
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {opp.relevanceScore}% Match
-                    </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
@@ -224,7 +233,15 @@ export function OpportunityHub() {
                   </div>
                 </div>
 
-                <ArrowUpRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 flex-shrink-0"
+                  onClick={() => handleCheckFit(opp)}
+                >
+                  <Target className="w-4 h-4" />
+                  Check Fit
+                </Button>
               </div>
             </motion.div>
           ))}

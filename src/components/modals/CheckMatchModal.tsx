@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Zap, Clock, Target, Lightbulb } from "lucide-react";
+import { X, Zap, Clock, Target, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -38,6 +38,7 @@ export function CheckMatchModal({
   const [commitment, setCommitment] = useState<"1hr" | "4hrs" | "fulltime">(
     "4hrs"
   );
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const intensityIndex =
     intensity === "crash" ? 0 : intensity === "focused" ? 1 : 2;
@@ -50,6 +51,14 @@ export function CheckMatchModal({
       return "Comprehensive coverage with spaced learning. Great for long-term retention.";
     }
     return "Balanced approach focusing on practical skills with room for exploration.";
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setIsGenerating(false);
+    onGenerate({ intensity, commitment });
   };
 
   return (
@@ -198,14 +207,23 @@ export function CheckMatchModal({
                 variant="outline"
                 onClick={onClose}
                 className="flex-1"
+                disabled={isGenerating}
               >
                 Cancel
               </Button>
               <Button
-                onClick={() => onGenerate({ intensity, commitment })}
+                onClick={handleGenerate}
+                disabled={isGenerating}
                 className="flex-1 gradient-primary text-primary-foreground hover:opacity-90"
               >
-                Generate Roadmap
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Gemini is architecting your path...
+                  </>
+                ) : (
+                  "Generate Roadmap"
+                )}
               </Button>
             </div>
           </motion.div>
