@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Target,
@@ -7,7 +7,6 @@ import {
   Zap,
   Search,
   Bell,
-  Plus,
   Loader2,
   Save,
 } from "lucide-react";
@@ -23,23 +22,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 
 const RESUME_STORAGE_KEY = "careerhq_resume_text";
+const ANALYSIS_COMPLETED_KEY = "careerhq_analysis_completed";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isCheckMatchOpen, setIsCheckMatchOpen] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(260);
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisCompleted, setAnalysisCompleted] = useState(false);
+  
+  const heroRef = useRef<HTMLDivElement>(null);
 
-  // Load resume from localStorage on mount
+  // Load resume and analysis state from localStorage on mount
   useEffect(() => {
     const savedResume = localStorage.getItem(RESUME_STORAGE_KEY);
     if (savedResume) {
       setResumeText(savedResume);
     }
+    const savedAnalysis = localStorage.getItem(ANALYSIS_COMPLETED_KEY);
+    if (savedAnalysis === "true") {
+      setAnalysisCompleted(true);
+    }
   }, []);
+
+  // Save resume to localStorage whenever it changes
+  const handleResumeChange = (text: string) => {
+    setResumeText(text);
+    localStorage.setItem(RESUME_STORAGE_KEY, text);
+  };
 
   const handleSaveResume = () => {
     localStorage.setItem(RESUME_STORAGE_KEY, resumeText);
@@ -49,7 +61,7 @@ const Index = () => {
     });
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     if (!jobDescription.trim()) {
       toast({
         title: "Job Description Required",
@@ -59,29 +71,56 @@ const Index = () => {
       return;
     }
 
-    setIsAnalyzing(true);
     console.log(`Comparing Resume: ${resumeText} with Job: ${jobDescription}`);
-
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    setIsAnalyzing(false);
     setIsCheckMatchOpen(true);
   };
 
-  const handleGenerate = (settings: RoadmapSettings) => {
+  const handleGenerate = async (settings: RoadmapSettings) => {
     console.log("Generating roadmap with settings:", settings);
+    // Loading is handled in the modal itself
     setIsCheckMatchOpen(false);
+    setAnalysisCompleted(true);
+    localStorage.setItem(ANALYSIS_COMPLETED_KEY, "true");
     setIsAnalysisOpen(true);
   };
 
   const handleResumeUpload = (file: File) => {
     console.log("Resume uploaded:", file.name);
+    // For now, just show a toast - actual PDF parsing would be done here
+    toast({
+      title: "Resume Uploaded",
+      description: `${file.name} has been uploaded. PDF parsing coming soon.`,
+    });
+  };
+
+  const handleCheckFit = (opportunityText: string) => {
+    setJobDescription(opportunityText);
+    setActiveSection("dashboard");
+    // Scroll to hero section after navigation
+    setTimeout(() => {
+      heroRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+    toast({
+      title: "Opportunity Loaded",
+      description: "The opportunity details have been loaded for analysis.",
+    });
+  };
+
+  const handleNavigate = (section: string) => {
+    if (section === "match") {
+      // Instead of navigating to match section, scroll to hero and open modal
+      setActiveSection("dashboard");
+      setTimeout(() => {
+        heroRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+      return;
+    }
+    setActiveSection(section);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar activeSection={activeSection} onNavigate={setActiveSection} />
+      <Sidebar activeSection={activeSection} onNavigate={handleNavigate} />
 
       {/* Main Content */}
       <main className="transition-all duration-300 ml-[72px] md:ml-[260px]">
@@ -104,13 +143,6 @@ const Index = () => {
                 <Bell className="w-5 h-5 text-muted-foreground" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
               </button>
-              <Button
-                onClick={() => setIsCheckMatchOpen(true)}
-                className="gap-2 gradient-primary text-primary-foreground hover:opacity-90"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Check Match</span>
-              </Button>
             </div>
           </div>
         </header>
@@ -121,6 +153,7 @@ const Index = () => {
             <>
               {/* Hero Section with Job Analysis */}
               <motion.div
+                ref={heroRef}
                 key="dashboard"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -163,33 +196,33 @@ const Index = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                   title="Skill Match"
-                  value="68%"
-                  change="+12% this month"
-                  changeType="positive"
+                  value={analysisCompleted ? "68%" : "N/A"}
+                  change={analysisCompleted ? "+12% this month" : "Run analysis to calculate"}
+                  changeType={analysisCompleted ? "positive" : "neutral"}
                   icon={Target}
                   delay={0}
                 />
                 <StatsCard
                   title="Applications"
-                  value={24}
-                  change="8 in review"
+                  value={analysisCompleted ? 24 : 0}
+                  change={analysisCompleted ? "8 in review" : "Start applying"}
                   changeType="neutral"
                   icon={TrendingUp}
                   delay={0.1}
                 />
                 <StatsCard
                   title="Connections"
-                  value={156}
-                  change="+23 new"
-                  changeType="positive"
+                  value={analysisCompleted ? 156 : 0}
+                  change={analysisCompleted ? "+23 new" : "Build your network"}
+                  changeType={analysisCompleted ? "positive" : "neutral"}
                   icon={Users}
                   delay={0.2}
                 />
                 <StatsCard
                   title="Skills Gained"
-                  value={12}
-                  change="3 this week"
-                  changeType="positive"
+                  value={analysisCompleted ? 12 : 0}
+                  change={analysisCompleted ? "3 this week" : "Complete tasks to grow"}
+                  changeType={analysisCompleted ? "positive" : "neutral"}
                   icon={Zap}
                   delay={0.3}
                 />
@@ -207,7 +240,7 @@ const Index = () => {
                       View All
                     </Button>
                   </div>
-                  <OpportunityHub />
+                  <OpportunityHub onCheckFit={handleCheckFit} />
                 </div>
 
                 {/* Sidebar Content */}
@@ -228,7 +261,7 @@ const Index = () => {
                       <Button
                         variant="outline"
                         className="w-full justify-start gap-3"
-                        onClick={() => setIsCheckMatchOpen(true)}
+                        onClick={() => heroRef.current?.scrollIntoView({ behavior: "smooth" })}
                       >
                         <Target className="w-4 h-4 text-primary" />
                         Analyze Job Match
@@ -236,6 +269,7 @@ const Index = () => {
                       <Button
                         variant="outline"
                         className="w-full justify-start gap-3"
+                        onClick={() => setIsAnalysisOpen(true)}
                       >
                         <TrendingUp className="w-4 h-4 text-success" />
                         View Learning Path
@@ -267,13 +301,13 @@ const Index = () => {
                             Learning Hours
                           </span>
                           <span className="font-medium text-foreground">
-                            12/20 hrs
+                            {analysisCompleted ? "12/20 hrs" : "0/20 hrs"}
                           </span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: "60%" }}
+                            animate={{ width: analysisCompleted ? "60%" : "0%" }}
                             transition={{ duration: 1, delay: 0.5 }}
                             className="h-full bg-primary rounded-full"
                           />
@@ -284,12 +318,14 @@ const Index = () => {
                           <span className="text-muted-foreground">
                             Tasks Completed
                           </span>
-                          <span className="font-medium text-foreground">7/10</span>
+                          <span className="font-medium text-foreground">
+                            {analysisCompleted ? "7/10" : "0/10"}
+                          </span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: "70%" }}
+                            animate={{ width: analysisCompleted ? "70%" : "0%" }}
                             transition={{ duration: 1, delay: 0.6 }}
                             className="h-full bg-success rounded-full"
                           />
@@ -302,22 +338,6 @@ const Index = () => {
             </>
           )}
 
-          {activeSection === "match" && (
-            <motion.div
-              key="match"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              <h1 className="text-3xl font-bold text-foreground">Check Match</h1>
-              <p className="text-muted-foreground">Analyze how well your skills match with job requirements.</p>
-              <Button onClick={() => setIsCheckMatchOpen(true)} className="gap-2 gradient-primary text-primary-foreground">
-                <Target className="w-4 h-4" />
-                Start New Match Analysis
-              </Button>
-            </motion.div>
-          )}
-
           {activeSection === "opportunities" && (
             <motion.div
               key="opportunities"
@@ -327,7 +347,7 @@ const Index = () => {
             >
               <h1 className="text-3xl font-bold text-foreground">Opportunities</h1>
               <p className="text-muted-foreground">Discover jobs, hackathons, and projects tailored to your profile.</p>
-              <OpportunityHub />
+              <OpportunityHub onCheckFit={handleCheckFit} />
             </motion.div>
           )}
 
@@ -342,6 +362,35 @@ const Index = () => {
               <p className="text-muted-foreground">Upload and manage your resume to improve match accuracy.</p>
               <div className="max-w-md">
                 <ResumeUpload onUpload={handleResumeUpload} />
+              </div>
+              
+              {/* Resume Text Section */}
+              <div className="glass-card rounded-xl p-6 max-w-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground">Resume Text</h3>
+                  <Button
+                    onClick={handleSaveResume}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Paste your resume text below. This will be saved locally and used for job matching analysis.
+                </p>
+                <Textarea
+                  placeholder="Paste your full resume here (experience, skills, education, etc.)..."
+                  value={resumeText}
+                  onChange={(e) => handleResumeChange(e.target.value)}
+                  className="min-h-[300px] resize-none bg-muted/50 border-border focus:border-primary"
+                />
+                {resumeText && (
+                  <p className="text-xs text-muted-foreground">
+                    {resumeText.length} characters • Synced to browser storage
+                  </p>
+                )}
               </div>
             </motion.div>
           )}
@@ -375,12 +424,12 @@ const Index = () => {
                 <Textarea
                   placeholder="Paste your full resume here (experience, skills, education, etc.)..."
                   value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
+                  onChange={(e) => handleResumeChange(e.target.value)}
                   className="min-h-[300px] resize-none bg-muted/50 border-border focus:border-primary"
                 />
                 {resumeText && (
                   <p className="text-xs text-muted-foreground">
-                    {resumeText.length} characters • Last saved in browser storage
+                    {resumeText.length} characters • Synced to browser storage
                   </p>
                 )}
               </div>
