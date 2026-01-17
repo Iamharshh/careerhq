@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ const navItems: NavItem[] = [
   { icon: Target, label: "Analyze Match", href: "#match" },
   { icon: Briefcase, label: "Opportunities", href: "#opportunities" },
   { icon: FileText, label: "Resume", href: "#resume" },
+  { icon: History, label: "History", href: "#history" },
   { icon: Settings, label: "Settings", href: "#settings" },
 ];
 
