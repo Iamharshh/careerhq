@@ -21,10 +21,25 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { useSearchHistory } from "@/hooks/useSearchHistory";
+import { useSearchHistory, AnalysisData, Task, SearchHistoryEntry } from "@/hooks/useSearchHistory";
 
 const RESUME_STORAGE_KEY = "careerhq_resume_text";
 const ANALYSIS_COMPLETED_KEY = "careerhq_analysis_completed";
+
+// Default analysis data for new analyses
+const generateDefaultAnalysisData = (jobTitle: string): AnalysisData => ({
+  jobTitle,
+  skillsFound: ["React", "TypeScript", "Node.js", "Git", "REST APIs", "Agile"],
+  skillGaps: ["GraphQL", "Docker", "AWS", "System Design", "CI/CD"],
+  tasks: [
+    { id: "1", title: "Complete GraphQL fundamentals course", hours: 8, proofLink: "https://example.com/graphql-cert", completed: false },
+    { id: "2", title: "Build a containerized Node.js app", hours: 12, proofLink: "https://github.com/example/docker-project", completed: false },
+    { id: "3", title: "Deploy to AWS using EC2 & S3", hours: 6, proofLink: "https://example.com/aws-project", completed: false },
+    { id: "4", title: "Design a scalable microservices architecture", hours: 10, proofLink: "https://miro.com/example-design", completed: false },
+    { id: "5", title: "Set up GitHub Actions CI/CD pipeline", hours: 4, proofLink: "https://github.com/example/actions", completed: false },
+  ],
+  matchPercentage: Math.floor(Math.random() * 30) + 60,
+});
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -35,9 +50,11 @@ const Index = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisCompleted, setAnalysisCompleted] = useState(false);
   const [lastMatchPercentage, setLastMatchPercentage] = useState(68);
+  const [currentAnalysisData, setCurrentAnalysisData] = useState<AnalysisData | null>(null);
+  const [currentHistoryEntryId, setCurrentHistoryEntryId] = useState<string | null>(null);
   
   const heroRef = useRef<HTMLDivElement>(null);
-  const { history, addEntry, deleteEntry } = useSearchHistory();
+  const { history, addEntry, deleteEntry, updateEntryProgress } = useSearchHistory();
 
   // Load resume and analysis state from localStorage on mount
   useEffect(() => {
@@ -81,19 +98,37 @@ const Index = () => {
 
   const handleGenerate = async (settings: RoadmapSettings) => {
     console.log("Generating roadmap with settings:", settings);
-    // Loading is handled in the modal itself
     setIsCheckMatchOpen(false);
     setAnalysisCompleted(true);
     localStorage.setItem(ANALYSIS_COMPLETED_KEY, "true");
     
-    // Generate a random match percentage for demo (would be from actual AI)
-    const matchPercentage = Math.floor(Math.random() * 30) + 60; // 60-90%
-    setLastMatchPercentage(matchPercentage);
+    // Generate analysis data
+    const lines = jobDescription.trim().split('\n');
+    const jobTitle = lines[0] || "Untitled Position";
+    const analysisData = generateDefaultAnalysisData(jobTitle);
+    
+    setLastMatchPercentage(analysisData.matchPercentage);
+    setCurrentAnalysisData(analysisData);
+    setCurrentHistoryEntryId(null); // New analysis, no history entry yet
     
     // Add to search history
-    addEntry(jobDescription, matchPercentage);
+    addEntry(jobDescription, analysisData);
     
     setIsAnalysisOpen(true);
+  };
+
+  const handleViewHistoryEntry = (entry: SearchHistoryEntry) => {
+    setCurrentAnalysisData(entry.analysisData);
+    setCurrentHistoryEntryId(entry.id);
+    setIsAnalysisOpen(true);
+  };
+
+  const handleSaveProgress = (entryId: string, tasks: Task[]) => {
+    updateEntryProgress(entryId, tasks);
+    toast({
+      title: "Progress Saved",
+      description: "Your learning progress has been saved.",
+    });
   };
 
   const handleResumeUpload = (file: File) => {
@@ -420,7 +455,7 @@ const Index = () => {
                   View all your past job match analyses.
                 </p>
               </div>
-              <SearchHistory history={history} onDelete={deleteEntry} />
+              <SearchHistory history={history} onDelete={deleteEntry} onViewEntry={handleViewHistoryEntry} />
             </motion.div>
           )}
 
@@ -482,6 +517,9 @@ const Index = () => {
       <MatchAnalysisModal
         isOpen={isAnalysisOpen}
         onClose={() => setIsAnalysisOpen(false)}
+        analysisData={currentAnalysisData}
+        historyEntryId={currentHistoryEntryId}
+        onSaveProgress={handleSaveProgress}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -12,21 +12,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadialProgress } from "@/components/dashboard/RadialProgress";
-
-interface Task {
-  id: string;
-  title: string;
-  hours: number;
-  proofLink: string;
-  completed: boolean;
-}
+import { Task, AnalysisData } from "@/hooks/useSearchHistory";
 
 interface MatchAnalysisModalProps {
   isOpen: boolean;
   onClose: () => void;
+  analysisData?: AnalysisData | null;
+  historyEntryId?: string | null;
+  onSaveProgress?: (entryId: string, tasks: Task[]) => void;
 }
 
-const mockSkillsFound = [
+const defaultSkillsFound = [
   "React",
   "TypeScript",
   "Node.js",
@@ -34,7 +30,7 @@ const mockSkillsFound = [
   "REST APIs",
   "Agile",
 ];
-const mockSkillGaps = [
+const defaultSkillGaps = [
   "GraphQL",
   "Docker",
   "AWS",
@@ -42,7 +38,7 @@ const mockSkillGaps = [
   "CI/CD",
 ];
 
-const mockTasks: Task[] = [
+const defaultTasks: Task[] = [
   {
     id: "1",
     title: "Complete GraphQL fundamentals course",
@@ -83,9 +79,25 @@ const mockTasks: Task[] = [
 export function MatchAnalysisModal({
   isOpen,
   onClose,
+  analysisData,
+  historyEntryId,
+  onSaveProgress,
 }: MatchAnalysisModalProps) {
-  const [tasks, setTasks] = useState(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+
+  // Update tasks when analysisData changes
+  useEffect(() => {
+    if (analysisData?.tasks) {
+      setTasks(analysisData.tasks);
+    } else {
+      setTasks(defaultTasks);
+    }
+  }, [analysisData]);
+
+  const skillsFound = analysisData?.skillsFound || defaultSkillsFound;
+  const skillGaps = analysisData?.skillGaps || defaultSkillGaps;
+  const jobTitle = analysisData?.jobTitle || "Senior Frontend Developer at TechCorp";
 
   const toggleTask = (id: string) => {
     setTasks((prev) =>
@@ -93,6 +105,13 @@ export function MatchAnalysisModal({
         task.id === id ? { ...task, completed: !task.completed } : task
       )
     );
+  };
+
+  const handleSaveProgress = () => {
+    if (historyEntryId && onSaveProgress) {
+      onSaveProgress(historyEntryId, tasks);
+    }
+    onClose();
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
@@ -123,7 +142,7 @@ export function MatchAnalysisModal({
                   Match Analysis
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Senior Frontend Developer at TechCorp
+                  {jobTitle}
                 </p>
               </div>
               <button
@@ -153,7 +172,7 @@ export function MatchAnalysisModal({
                       </h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {mockSkillsFound.map((skill) => (
+                      {skillsFound.map((skill) => (
                         <span
                           key={skill}
                           className="px-3 py-1 text-xs font-medium rounded-full bg-success/10 text-success border border-success/20"
@@ -173,7 +192,7 @@ export function MatchAnalysisModal({
                       </h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {mockSkillGaps.map((skill) => (
+                      {skillGaps.map((skill) => (
                         <span
                           key={skill}
                           className="px-3 py-1 text-xs font-medium rounded-full bg-warning/10 text-warning border border-warning/20"
@@ -307,7 +326,7 @@ export function MatchAnalysisModal({
                   {completedCount} of {tasks.length} tasks completed
                 </p>
                 <Button
-                  onClick={onClose}
+                  onClick={handleSaveProgress}
                   className="gradient-primary text-primary-foreground hover:opacity-90"
                 >
                   Save Progress
