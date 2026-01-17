@@ -16,10 +16,12 @@ import { ResumeUpload } from "@/components/dashboard/ResumeUpload";
 import { OpportunityHub } from "@/components/opportunities/OpportunityHub";
 import { CheckMatchModal, RoadmapSettings } from "@/components/modals/CheckMatchModal";
 import { MatchAnalysisModal } from "@/components/modals/MatchAnalysisModal";
+import { SearchHistory } from "@/components/history/SearchHistory";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { useSearchHistory } from "@/hooks/useSearchHistory";
 
 const RESUME_STORAGE_KEY = "careerhq_resume_text";
 const ANALYSIS_COMPLETED_KEY = "careerhq_analysis_completed";
@@ -32,8 +34,10 @@ const Index = () => {
   const [resumeText, setResumeText] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisCompleted, setAnalysisCompleted] = useState(false);
+  const [lastMatchPercentage, setLastMatchPercentage] = useState(68);
   
   const heroRef = useRef<HTMLDivElement>(null);
+  const { history, addEntry, deleteEntry } = useSearchHistory();
 
   // Load resume and analysis state from localStorage on mount
   useEffect(() => {
@@ -81,6 +85,14 @@ const Index = () => {
     setIsCheckMatchOpen(false);
     setAnalysisCompleted(true);
     localStorage.setItem(ANALYSIS_COMPLETED_KEY, "true");
+    
+    // Generate a random match percentage for demo (would be from actual AI)
+    const matchPercentage = Math.floor(Math.random() * 30) + 60; // 60-90%
+    setLastMatchPercentage(matchPercentage);
+    
+    // Add to search history
+    addEntry(jobDescription, matchPercentage);
+    
     setIsAnalysisOpen(true);
   };
 
@@ -196,7 +208,7 @@ const Index = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatsCard
                   title="Skill Match"
-                  value={analysisCompleted ? "68%" : "N/A"}
+                  value={analysisCompleted ? `${lastMatchPercentage}%` : "N/A"}
                   change={analysisCompleted ? "+12% this month" : "Run analysis to calculate"}
                   changeType={analysisCompleted ? "positive" : "neutral"}
                   icon={Target}
@@ -392,6 +404,23 @@ const Index = () => {
                   </p>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {activeSection === "history" && (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Search History</h1>
+                <p className="text-muted-foreground mt-1">
+                  View all your past job match analyses.
+                </p>
+              </div>
+              <SearchHistory history={history} onDelete={deleteEntry} />
             </motion.div>
           )}
 
